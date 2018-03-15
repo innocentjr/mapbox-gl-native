@@ -102,9 +102,13 @@ void FillExtrusionBucket::addFeature(const GeometryTileFeature& feature,
 
                     const Point<double> perp = util::unit(util::perp(d1 - d2));
                     const auto dist = util::dist<int16_t>(d1, d2);
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-constant-compare"
                     if (dist > std::numeric_limits<int16_t>::max()) {
                         edgeDistance = 0;
                     }
+#pragma clang diagnostic pop
 
                     vertices.emplace_back(
                         FillExtrusionProgram::layoutVertex(p1, perp.x, perp.y, 0, 0, edgeDistance));
