@@ -184,7 +184,7 @@ public final class MapboxMap {
   void onUpdateFullyRendered() {
     CameraPosition cameraPosition = transform.invalidateCameraPosition();
     if (cameraPosition != null) {
-      uiSettings.update(cameraPosition);
+      uiSettings.updateCompass(cameraPosition);
     }
   }
 

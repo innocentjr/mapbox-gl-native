@@ -1,9 +1,12 @@
 package com.mapbox.mapboxsdk.maps.widgets;
 
 import android.annotation.SuppressLint;
+import android.arch.lifecycle.LifecycleOwner;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPropertyAnimatorCompat;
 import android.support.v4.view.ViewPropertyAnimatorListenerAdapter;
@@ -13,6 +16,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.UiSettings;
+import com.mapbox.mapboxsdk.utils.ViewUtils;
 
 /**
  * UI element overlaid on a map to show the map's bearing when it isn't true north (0.0). Tapping
@@ -36,6 +41,8 @@ public final class CompassView extends ImageView implements Runnable {
   private MapboxMap.OnCompassAnimationListener compassAnimationListener;
   private boolean isAnimating = false;
 
+  private UiSettings uiSettings;
+
   public CompassView(Context context) {
     super(context);
     initialize(context);
@@ -52,12 +59,37 @@ public final class CompassView extends ImageView implements Runnable {
   }
 
   private void initialize(Context context) {
-    setEnabled(false);
+    uiSettings = ViewModelProviders.of((FragmentActivity) context).get(UiSettings.class);
+    initialiseObservableSettings();
 
     // Layout params
     float screenDensity = context.getResources().getDisplayMetrics().density;
     ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams((int) (48 * screenDensity), (int) (48 * screenDensity));
     setLayoutParams(lp);
+  }
+
+  void initialiseObservableSettings() {
+    LifecycleOwner lifecycleOwner = (LifecycleOwner) getContext();
+
+    // gravity
+    uiSettings.getCompassGravityObservable().observe(lifecycleOwner,
+      gravity -> ViewUtils.setViewGravity(this, gravity));
+
+    // image
+    uiSettings.getCompassImageObservable().observe(lifecycleOwner, this::setImageDrawable);
+
+    // enabled
+    uiSettings.isCompassEnabledObservable().observe(lifecycleOwner, this::setEnabled);
+
+    // fading north
+    uiSettings.isCompassFadeWhenFacingNorthObservable().observe(lifecycleOwner, this::fadeCompassViewFacingNorth);
+
+    // margins
+    uiSettings.getCompassMarginsObservable().observe(lifecycleOwner, margins ->
+      ViewUtils.setViewMargins(this, margins[0], margins[1], margins[2], margins[3]));
+
+    // rotation
+    uiSettings.getCompassRotationObservable().observe(lifecycleOwner, this::update);
   }
 
   public void injectCompassAnimationListener(@NonNull MapboxMap.OnCompassAnimationListener compassAnimationListener) {
@@ -96,6 +128,11 @@ public final class CompassView extends ImageView implements Runnable {
       setAlpha(0.0f);
       setVisibility(View.INVISIBLE);
     }
+
+    if (uiSettings != null && uiSettings.isCompassEnabled() != enabled) {
+      // store the right state in the LiveData object
+      uiSettings.setCompassEnabled(enabled);
+    }
   }
 
   /**
@@ -126,10 +163,22 @@ public final class CompassView extends ImageView implements Runnable {
     setRotation(rotation);
   }
 
+  /**
+   * @deprecated Use {@link UiSettings#setCompassFadeFacingNorth(boolean)} instead.
+   */
+  @Deprecated
   public void fadeCompassViewFacingNorth(boolean compassFadeFacingNorth) {
     fadeCompassViewFacingNorth = compassFadeFacingNorth;
+    if (uiSettings != null && uiSettings.isCompassFadeWhenFacingNorth() != compassFadeFacingNorth) {
+      // store the right state in the LiveData object
+      uiSettings.setCompassFadeFacingNorth(compassFadeFacingNorth);
+    }
   }
 
+  /**
+   * @deprecated Use {@link UiSettings#isCompassFadeWhenFacingNorth()} instead.
+   */
+  @Deprecated
   public boolean isFadeCompassViewFacingNorth() {
     return fadeCompassViewFacingNorth;
   }
@@ -138,16 +187,24 @@ public final class CompassView extends ImageView implements Runnable {
    * Set the CompassView image.
    *
    * @param compass the drawable to use as compass image
+   * @deprecated Use {@link UiSettings#setCompassImage(Drawable)} instead.
    */
+  @Deprecated
   public void setCompassImage(Drawable compass) {
-    setImageDrawable(compass);
+    if (uiSettings != null) {
+      uiSettings.setCompassImage(compass);
+    } else {
+      setImageDrawable(compass);
+    }
   }
 
   /**
    * Get the current configured CompassView image.
    *
    * @return the drawable used as compass image
+   * @deprecated Use {@link UiSettings#getCompassImage()} instead.
    */
+  @Deprecated
   public Drawable getCompassImage() {
     return getDrawable();
   }

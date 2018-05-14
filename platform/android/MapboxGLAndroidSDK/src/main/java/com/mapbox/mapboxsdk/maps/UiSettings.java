@@ -8,7 +8,6 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
@@ -24,8 +23,8 @@ import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.maps.widgets.CompassView;
-import com.mapbox.mapboxsdk.utils.BitmapUtils;
 import com.mapbox.mapboxsdk.utils.ColorUtils;
+import com.mapbox.mapboxsdk.utils.ViewUtils;
 
 /**
  * Settings for the user interface of a MapboxMap. To obtain this interface, call getUiSettings().
@@ -34,15 +33,20 @@ public final class UiSettings extends ViewModel {
 
   private Projection projection; // TODO: 14.05.18 clear projection during maps destroy?
 
-  private CompassView compassView;
   private ImageView attributionsView;
   private View logoView;
   private float pixelRatio;
-  private int[] compassMargins = new int[4];
   private final int[] logoMargins = new int[4];
   private final int[] attributionsMargins = new int[4];
   private AttributionDialogManager attributionDialogManager;
 
+  // compass settings
+  private final MutableLiveData<Integer> compassGravity = new MutableLiveData<>();
+  private final MutableLiveData<Drawable> compassImage = new MutableLiveData<>();
+  private final MutableLiveData<Boolean> compassEnabled = new MutableLiveData<>();
+  private final MutableLiveData<Boolean> compassFadeFacingNorth = new MutableLiveData<>();
+  private final MutableLiveData<Integer[]> compassMargins = new MutableLiveData<>();
+  private final MutableLiveData<Double> compassRotation = new MutableLiveData<>();
 
   private boolean rotateGesturesEnabled = true;
 
@@ -65,12 +69,11 @@ public final class UiSettings extends ViewModel {
 
   private boolean deselectMarkersOnTap = true;
 
-  private MutableLiveData<PointF> userProvidedFocalPoint;
+  private final MutableLiveData<PointF> userProvidedFocalPoint = new MutableLiveData<>();
 
-  void initialiseViews(@NonNull Projection projection, @NonNull CompassView compassView,
-                       @NonNull ImageView attributionsView, @NonNull View logoView) {
+  void initialiseViews(@NonNull Projection projection, @NonNull ImageView attributionsView, @NonNull View logoView) {
     this.projection = projection;
-    this.compassView = compassView;
+
     this.attributionsView = attributionsView;
     this.logoView = logoView;
     if (logoView.getResources() != null) {
@@ -89,7 +92,6 @@ public final class UiSettings extends ViewModel {
 
   void onSaveInstanceState(Bundle outState) {
     saveGestures(outState);
-    saveCompass(outState);
     saveLogo(outState);
     saveAttribution(outState);
     saveZoomControl(outState);
@@ -99,7 +101,6 @@ public final class UiSettings extends ViewModel {
 
   void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
     restoreGestures(savedInstanceState);
-    restoreCompass(savedInstanceState);
     restoreLogo(savedInstanceState);
     restoreAttribution(savedInstanceState);
     restoreZoomControl(savedInstanceState);
@@ -159,30 +160,6 @@ public final class UiSettings extends ViewModel {
       options.compassImage(ResourcesCompat.getDrawable(resources, R.drawable.mapbox_compass_icon, null));
     }
     setCompassImage(options.getCompassImage());
-  }
-
-  private void saveCompass(Bundle outState) {
-    outState.putBoolean(MapboxConstants.STATE_COMPASS_ENABLED, isCompassEnabled());
-    outState.putInt(MapboxConstants.STATE_COMPASS_GRAVITY, getCompassGravity());
-    outState.putInt(MapboxConstants.STATE_COMPASS_MARGIN_LEFT, getCompassMarginLeft());
-    outState.putInt(MapboxConstants.STATE_COMPASS_MARGIN_TOP, getCompassMarginTop());
-    outState.putInt(MapboxConstants.STATE_COMPASS_MARGIN_BOTTOM, getCompassMarginBottom());
-    outState.putInt(MapboxConstants.STATE_COMPASS_MARGIN_RIGHT, getCompassMarginRight());
-    outState.putBoolean(MapboxConstants.STATE_COMPASS_FADE_WHEN_FACING_NORTH, isCompassFadeWhenFacingNorth());
-    outState.putByteArray(MapboxConstants.STATE_COMPASS_IMAGE_BITMAP,
-      BitmapUtils.getByteArrayFromDrawable(getCompassImage()));
-  }
-
-  private void restoreCompass(Bundle savedInstanceState) {
-    setCompassEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_COMPASS_ENABLED));
-    setCompassGravity(savedInstanceState.getInt(MapboxConstants.STATE_COMPASS_GRAVITY));
-    setCompassMargins(savedInstanceState.getInt(MapboxConstants.STATE_COMPASS_MARGIN_LEFT),
-      savedInstanceState.getInt(MapboxConstants.STATE_COMPASS_MARGIN_TOP),
-      savedInstanceState.getInt(MapboxConstants.STATE_COMPASS_MARGIN_RIGHT),
-      savedInstanceState.getInt(MapboxConstants.STATE_COMPASS_MARGIN_BOTTOM));
-    setCompassFadeFacingNorth(savedInstanceState.getBoolean(MapboxConstants.STATE_COMPASS_FADE_WHEN_FACING_NORTH));
-    setCompassImage(BitmapUtils.getDrawableFromByteArray(
-      compassView.getContext(), savedInstanceState.getByteArray(MapboxConstants.STATE_COMPASS_IMAGE_BITMAP)));
   }
 
   private void initialiseLogo(MapboxMapOptions options, Resources resources) {
@@ -284,8 +261,8 @@ public final class UiSettings extends ViewModel {
    *
    * @param compassEnabled True to enable the compass; false to disable the compass.
    */
-  public void setCompassEnabled(boolean compassEnabled) {
-    compassView.setEnabled(compassEnabled);
+  public void setCompassEnabled(boolean enabled) {
+    compassEnabled.postValue(enabled);
   }
 
   /**
@@ -294,7 +271,16 @@ public final class UiSettings extends ViewModel {
    * @return True if the compass is enabled; false if the compass is disabled.
    */
   public boolean isCompassEnabled() {
-    return compassView.isEnabled();
+    return compassEnabled.getValue();
+  }
+
+  /**
+   * Returns whether the compass is enabled observable.
+   *
+   * @return Compass enabled observable.
+   */
+  public MutableLiveData<Boolean> isCompassEnabledObservable() {
+    return compassEnabled;
   }
 
   /**
@@ -308,7 +294,7 @@ public final class UiSettings extends ViewModel {
    */
   @UiThread
   public void setCompassGravity(int gravity) {
-    setWidgetGravity(compassView, gravity);
+    compassGravity.postValue(gravity);
   }
 
   /**
@@ -319,8 +305,8 @@ public final class UiSettings extends ViewModel {
    *
    * @param compassFadeFacingNorth True to enable the fading animation; false to disable it
    */
-  public void setCompassFadeFacingNorth(boolean compassFadeFacingNorth) {
-    compassView.fadeCompassViewFacingNorth(compassFadeFacingNorth);
+  public void setCompassFadeFacingNorth(boolean fadeFacingNorth) {
+    compassFadeFacingNorth.postValue(fadeFacingNorth);
   }
 
   /**
@@ -332,7 +318,7 @@ public final class UiSettings extends ViewModel {
    * @param compass the drawable to show as image compass
    */
   public void setCompassImage(Drawable compass) {
-    compassView.setCompassImage(compass);
+    compassImage.postValue(compass);
   }
 
   /**
@@ -341,7 +327,16 @@ public final class UiSettings extends ViewModel {
    * @return True if the compass will fade, false if it remains visible
    */
   public boolean isCompassFadeWhenFacingNorth() {
-    return compassView.isFadeCompassViewFacingNorth();
+    return compassFadeFacingNorth.getValue();
+  }
+
+  /**
+   * Returns whether the compass performs a fading animation out when facing north observable.
+   *
+   * @return Compass fading north observable.
+   */
+  public MutableLiveData<Boolean> isCompassFadeWhenFacingNorthObservable() {
+    return compassFadeFacingNorth;
   }
 
   /**
@@ -350,7 +345,16 @@ public final class UiSettings extends ViewModel {
    * @return The gravity
    */
   public int getCompassGravity() {
-    return ((FrameLayout.LayoutParams) compassView.getLayoutParams()).gravity;
+    return compassGravity.getValue();
+  }
+
+  /**
+   * Returns the compass gravity value observable
+   *
+   * @return The gravity observable
+   */
+  public MutableLiveData<Integer> getCompassGravityObservable() {
+    return compassGravity;
   }
 
   /**
@@ -364,7 +368,7 @@ public final class UiSettings extends ViewModel {
    */
   @UiThread
   public void setCompassMargins(int left, int top, int right, int bottom) {
-    setWidgetMargins(compassView, compassMargins, left, top, right, bottom);
+    compassMargins.postValue(new Integer[] {left, top, right, bottom});
   }
 
   /**
@@ -373,7 +377,7 @@ public final class UiSettings extends ViewModel {
    * @return The left margin in pixels
    */
   public int getCompassMarginLeft() {
-    return compassMargins[0];
+    return compassMargins.getValue()[0];
   }
 
   /**
@@ -382,7 +386,7 @@ public final class UiSettings extends ViewModel {
    * @return The top margin in pixels
    */
   public int getCompassMarginTop() {
-    return compassMargins[1];
+    return compassMargins.getValue()[1];
   }
 
   /**
@@ -391,7 +395,7 @@ public final class UiSettings extends ViewModel {
    * @return The right margin in pixels
    */
   public int getCompassMarginRight() {
-    return compassMargins[2];
+    return compassMargins.getValue()[2];
   }
 
   /**
@@ -400,7 +404,16 @@ public final class UiSettings extends ViewModel {
    * @return The bottom margin in pixels
    */
   public int getCompassMarginBottom() {
-    return compassMargins[3];
+    return compassMargins.getValue()[3];
+  }
+
+  /**
+   * Get Compass View margins observable.
+   *
+   * @return Compass View margins observable.
+   */
+  public MutableLiveData<Integer[]> getCompassMarginsObservable() {
+    return compassMargins;
   }
 
   /**
@@ -409,16 +422,25 @@ public final class UiSettings extends ViewModel {
    * @return the drawable used as compass image
    */
   public Drawable getCompassImage() {
-    return compassView.getCompassImage();
+    return compassImage.getValue();
   }
 
-  void update(@NonNull CameraPosition cameraPosition) {
-    if (!isCompassEnabled()) {
-      return;
-    }
+  /**
+   * Get the CompassView image observable.
+   *
+   * @return the observable of the drawable used as compass image
+   */
+  public MutableLiveData<Drawable> getCompassImageObservable() {
+    return compassImage;
+  }
 
+  void updateCompass(@NonNull CameraPosition cameraPosition) {
     double clockwiseBearing = -cameraPosition.bearing;
-    compassView.update(clockwiseBearing);
+    compassRotation.postValue(clockwiseBearing);
+  }
+
+  public MutableLiveData<Double> getCompassRotationObservable() {
+    return compassRotation;
   }
 
   /**
@@ -452,7 +474,7 @@ public final class UiSettings extends ViewModel {
    * @param gravity Android SDK Gravity.
    */
   public void setLogoGravity(int gravity) {
-    setWidgetGravity(logoView, gravity);
+    ViewUtils.setViewGravity(logoView, gravity);
   }
 
   /**
@@ -474,7 +496,7 @@ public final class UiSettings extends ViewModel {
    * @param bottom The bottom margin in pixels.
    */
   public void setLogoMargins(int left, int top, int right, int bottom) {
-    setWidgetMargins(logoView, logoMargins, left, top, right, bottom);
+//    ViewUtils.setViewMargins(logoView, logoMargins, left, top, right, bottom); // TODO: 14.05.18 logo margin
   }
 
   /**
@@ -565,7 +587,7 @@ public final class UiSettings extends ViewModel {
    * @param gravity Android SDK Gravity.
    */
   public void setAttributionGravity(int gravity) {
-    setWidgetGravity(attributionsView, gravity);
+    ViewUtils.setViewGravity(attributionsView, gravity);
   }
 
   /**
@@ -586,7 +608,8 @@ public final class UiSettings extends ViewModel {
    * @param bottom The bottom margin in pixels.
    */
   public void setAttributionMargins(int left, int top, int right, int bottom) {
-    setWidgetMargins(attributionsView, attributionsMargins, left, top, right, bottom);
+//    ViewUtils.setViewMargins(attributionsView, attributionsMargins, left, top, right, bottom); // TODO: 14.05.18
+// attribution margin
   }
 
   /**
@@ -1015,31 +1038,5 @@ public final class UiSettings extends ViewModel {
     setCompassMargins(getCompassMarginLeft(), getCompassMarginTop(), getCompassMarginRight(), getCompassMarginBottom());
     setAttributionMargins(getAttributionMarginLeft(), getAttributionMarginTop(), getAttributionMarginRight(),
       getAttributionMarginBottom());
-  }
-
-  private void setWidgetGravity(@NonNull final View view, int gravity) {
-    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) view.getLayoutParams();
-    layoutParams.gravity = gravity;
-    view.setLayoutParams(layoutParams);
-  }
-
-  private void setWidgetMargins(@NonNull final View view, int[] initMargins, int left, int top, int right, int bottom) {
-    // keep state of initially set margins
-    initMargins[0] = left;
-    initMargins[1] = top;
-    initMargins[2] = right;
-    initMargins[3] = bottom;
-
-    // convert initial margins with padding
-    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) view.getLayoutParams();
-    layoutParams.setMargins(left, top, right, bottom);
-
-    // support RTL
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-      layoutParams.setMarginStart(left);
-      layoutParams.setMarginEnd(right);
-    }
-
-    view.setLayoutParams(layoutParams);
   }
 }
