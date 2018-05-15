@@ -5,7 +5,6 @@ import android.arch.lifecycle.ViewModel;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
-import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -13,7 +12,6 @@ import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -22,7 +20,6 @@ import android.widget.ImageView;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
-import com.mapbox.mapboxsdk.maps.widgets.CompassView;
 import com.mapbox.mapboxsdk.utils.ColorUtils;
 import com.mapbox.mapboxsdk.utils.ViewUtils;
 
@@ -30,14 +27,12 @@ import com.mapbox.mapboxsdk.utils.ViewUtils;
  * Settings for the user interface of a MapboxMap. To obtain this interface, call getUiSettings().
  */
 public final class UiSettings extends ViewModel {
-
+  // TODO: 15.05.18 change post values to set values
   private Projection projection; // TODO: 14.05.18 clear projection during maps destroy?
 
-  private ImageView attributionsView;
   private View logoView;
   private float pixelRatio;
   private final int[] logoMargins = new int[4];
-  private final int[] attributionsMargins = new int[4];
   private AttributionDialogManager attributionDialogManager;
 
   // compass settings
@@ -47,6 +42,13 @@ public final class UiSettings extends ViewModel {
   private final MutableLiveData<Boolean> compassFadeFacingNorth = new MutableLiveData<>();
   private final MutableLiveData<Integer[]> compassMargins = new MutableLiveData<>();
   private final MutableLiveData<Double> compassRotation = new MutableLiveData<>();
+
+  // attribution settings
+  private final MutableLiveData<Integer> attributionGravity = new MutableLiveData<>();
+  private final MutableLiveData<Boolean> attributionEnabled = new MutableLiveData<>();
+  private final MutableLiveData<Integer> attributionTintColor = new MutableLiveData<>();
+  private final MutableLiveData<Integer[]> attributionMargins = new MutableLiveData<>();
+
 
   private boolean rotateGesturesEnabled = true;
 
@@ -71,10 +73,9 @@ public final class UiSettings extends ViewModel {
 
   private final MutableLiveData<PointF> userProvidedFocalPoint = new MutableLiveData<>();
 
-  void initialiseViews(@NonNull Projection projection, @NonNull ImageView attributionsView, @NonNull View logoView) {
+  void initialiseViews(@NonNull Projection projection, @NonNull View logoView) {
     this.projection = projection;
 
-    this.attributionsView = attributionsView;
     this.logoView = logoView;
     if (logoView.getResources() != null) {
       this.pixelRatio = logoView.getResources().getDisplayMetrics().density;
@@ -93,7 +94,6 @@ public final class UiSettings extends ViewModel {
   void onSaveInstanceState(Bundle outState) {
     saveGestures(outState);
     saveLogo(outState);
-    saveAttribution(outState);
     saveZoomControl(outState);
     saveDeselectMarkersOnTap(outState);
     saveFocalPoint(outState);
@@ -102,7 +102,6 @@ public final class UiSettings extends ViewModel {
   void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
     restoreGestures(savedInstanceState);
     restoreLogo(savedInstanceState);
-    restoreAttribution(savedInstanceState);
     restoreZoomControl(savedInstanceState);
     restoreDeselectMarkersOnTap(savedInstanceState);
     restoreFocalPoint(savedInstanceState);
@@ -216,24 +215,6 @@ public final class UiSettings extends ViewModel {
       int leftMargin = (int) resources.getDimension(R.dimen.mapbox_ninety_two_dp);
       setAttributionMargins(leftMargin, margin, margin, margin);
     }
-  }
-
-  private void saveAttribution(Bundle outState) {
-    outState.putInt(MapboxConstants.STATE_ATTRIBUTION_GRAVITY, getAttributionGravity());
-    outState.putInt(MapboxConstants.STATE_ATTRIBUTION_MARGIN_LEFT, getAttributionMarginLeft());
-    outState.putInt(MapboxConstants.STATE_ATTRIBUTION_MARGIN_TOP, getAttributionMarginTop());
-    outState.putInt(MapboxConstants.STATE_ATTRIBUTION_MARGIN_RIGHT, getAttributionMarginRight());
-    outState.putInt(MapboxConstants.STATE_ATTRIBUTION_MARGIN_BOTTOM, getAttributionMarginBottom());
-    outState.putBoolean(MapboxConstants.STATE_ATTRIBUTION_ENABLED, isAttributionEnabled());
-  }
-
-  private void restoreAttribution(Bundle savedInstanceState) {
-    setAttributionEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_ATTRIBUTION_ENABLED));
-    setAttributionGravity(savedInstanceState.getInt(MapboxConstants.STATE_ATTRIBUTION_GRAVITY));
-    setAttributionMargins(savedInstanceState.getInt(MapboxConstants.STATE_ATTRIBUTION_MARGIN_LEFT),
-      savedInstanceState.getInt(MapboxConstants.STATE_ATTRIBUTION_MARGIN_TOP),
-      savedInstanceState.getInt(MapboxConstants.STATE_ATTRIBUTION_MARGIN_RIGHT),
-      savedInstanceState.getInt(MapboxConstants.STATE_ATTRIBUTION_MARGIN_BOTTOM));
   }
 
   private void initialiseZoomControl(Context context) {
@@ -544,7 +525,7 @@ public final class UiSettings extends ViewModel {
    * @param enabled True to enable the attribution; false to disable the attribution.
    */
   public void setAttributionEnabled(boolean enabled) {
-    attributionsView.setVisibility(enabled ? View.VISIBLE : View.GONE);
+    attributionEnabled.postValue(enabled);
   }
 
   /**
@@ -553,9 +534,17 @@ public final class UiSettings extends ViewModel {
    * @return True if the attribution is enabled; false if the attribution is disabled.
    */
   public boolean isAttributionEnabled() {
-    return attributionsView.getVisibility() == View.VISIBLE;
+    return attributionEnabled.getValue();
   }
 
+  /**
+   * Returns whether the attribution is enabled observable.
+   *
+   * @return Attribution is enabled observable.
+   */
+  public MutableLiveData<Boolean> isAttributionEnabledObservable() {
+    return attributionEnabled;
+  }
 
   /**
    * Set a custom attribution dialog manager.
@@ -587,7 +576,7 @@ public final class UiSettings extends ViewModel {
    * @param gravity Android SDK Gravity.
    */
   public void setAttributionGravity(int gravity) {
-    ViewUtils.setViewGravity(attributionsView, gravity);
+    attributionGravity.postValue(gravity);
   }
 
   /**
@@ -596,7 +585,16 @@ public final class UiSettings extends ViewModel {
    * @return The gravity
    */
   public int getAttributionGravity() {
-    return ((FrameLayout.LayoutParams) attributionsView.getLayoutParams()).gravity;
+    return attributionGravity.getValue();
+  }
+
+  /**
+   * Returns the gravity value of the logo observable.
+   *
+   * @return The gravity observable.
+   */
+  public MutableLiveData<Integer> getAttributionGravityObservable() {
+    return attributionGravity;
   }
 
   /**
@@ -608,8 +606,7 @@ public final class UiSettings extends ViewModel {
    * @param bottom The bottom margin in pixels.
    */
   public void setAttributionMargins(int left, int top, int right, int bottom) {
-//    ViewUtils.setViewMargins(attributionsView, attributionsMargins, left, top, right, bottom); // TODO: 14.05.18
-// attribution margin
+    attributionMargins.postValue(new Integer[] {left, top, right, bottom});
   }
 
   /**
@@ -621,13 +618,16 @@ public final class UiSettings extends ViewModel {
    * @param tintColor Color to tint the attribution.
    */
   public void setAttributionTintColor(@ColorInt int tintColor) {
-    // Check that the tint color being passed in isn't transparent.
-    if (Color.alpha(tintColor) == 0) {
-      ColorUtils.setTintList(attributionsView,
-        ContextCompat.getColor(attributionsView.getContext(), R.color.mapbox_blue));
-    } else {
-      ColorUtils.setTintList(attributionsView, tintColor);
-    }
+    attributionTintColor.postValue(tintColor);
+  }
+
+  /**
+   * Get Attribution tint color observable.
+   *
+   * @return Attribution tint color observable.
+   */
+  public MutableLiveData<Integer> getAttributionTintColorObservable() {
+    return attributionTintColor;
   }
 
   /**
@@ -636,7 +636,7 @@ public final class UiSettings extends ViewModel {
    * @return The left margin in pixels
    */
   public int getAttributionMarginLeft() {
-    return attributionsMargins[0];
+    return attributionMargins.getValue()[0];
   }
 
   /**
@@ -645,7 +645,7 @@ public final class UiSettings extends ViewModel {
    * @return The top margin in pixels
    */
   public int getAttributionMarginTop() {
-    return attributionsMargins[1];
+    return attributionMargins.getValue()[1];
   }
 
   /**
@@ -654,7 +654,7 @@ public final class UiSettings extends ViewModel {
    * @return The right margin in pixels
    */
   public int getAttributionMarginRight() {
-    return attributionsMargins[2];
+    return attributionMargins.getValue()[2];
   }
 
   /**
@@ -663,7 +663,16 @@ public final class UiSettings extends ViewModel {
    * @return The bottom margin in pixels
    */
   public int getAttributionMarginBottom() {
-    return attributionsMargins[3];
+    return attributionMargins.getValue()[3];
+  }
+
+  /**
+   * Returns Attribution margins observable.
+   *
+   * @return Attribution margins observable.
+   */
+  public MutableLiveData<Integer[]> getAttributionMarginsObservable() {
+    return attributionMargins;
   }
 
   /**

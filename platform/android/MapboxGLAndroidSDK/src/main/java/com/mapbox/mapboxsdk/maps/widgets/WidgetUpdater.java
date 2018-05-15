@@ -3,12 +3,16 @@ package com.mapbox.mapboxsdk.maps.widgets;
 import android.arch.lifecycle.LifecycleOwner;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
+import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.maps.UiSettings;
+import com.mapbox.mapboxsdk.utils.ColorUtils;
 import com.mapbox.mapboxsdk.utils.ViewUtils;
 
 /**
@@ -29,6 +33,7 @@ public final class WidgetUpdater {
 
     uiSettings = ViewModelProviders.of((FragmentActivity) context).get(UiSettings.class);
     initialiseCompassObservableSettings(context);
+    initialiseAttributionObservableSettings(context);
   }
 
   private void initialiseCompassObservableSettings(Context context) {
@@ -54,5 +59,32 @@ public final class WidgetUpdater {
 
     // rotation
     uiSettings.getCompassRotationObservable().observe(lifecycleOwner, compassView::updateBearing);
+  }
+
+  private void initialiseAttributionObservableSettings(Context context) {
+    LifecycleOwner lifecycleOwner = (LifecycleOwner) context;
+
+    // gravity
+    uiSettings.getAttributionGravityObservable().observe(lifecycleOwner,
+      gravity -> ViewUtils.setViewGravity(attributionView, gravity));
+
+    // enabled
+    uiSettings.isAttributionEnabledObservable().observe(lifecycleOwner,
+      enabled -> attributionView.setVisibility(enabled ? View.VISIBLE : View.GONE));
+
+    // tint color
+    uiSettings.getAttributionTintColorObservable().observe(lifecycleOwner, tintColor -> {
+      // Check that the tint color being passed in isn't transparent.
+      if (Color.alpha(tintColor) == 0) {
+        ColorUtils.setTintList(attributionView,
+          ContextCompat.getColor(attributionView.getContext(), R.color.mapbox_blue));
+      } else {
+        ColorUtils.setTintList(attributionView, tintColor);
+      }
+    });
+
+    // margins
+    uiSettings.getAttributionMarginsObservable().observe(lifecycleOwner, margins ->
+      ViewUtils.setViewMargins(attributionView, margins[0], margins[1], margins[2], margins[3]));
   }
 }
