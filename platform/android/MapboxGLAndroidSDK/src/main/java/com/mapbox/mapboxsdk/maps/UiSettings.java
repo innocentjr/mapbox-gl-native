@@ -549,10 +549,14 @@ public final class UiSettings extends ViewModel {
    * Set a custom attribution dialog manager.
    * <p>
    * Set to null to reset to default behaviour.
-   * </p>
+   * <p>
+   * You need to reset your custom manager with every {@link MapView} re-creation.
    *
    * @param attributionDialogManager the manager class used for showing attribution
+   * @deprecated This method might cause memory leaks.
+   * Use {@link MapView#setAttributionDialogManager(AttributionDialogManager)} instead.
    */
+  @Deprecated
   public void setAttributionDialogManager(@Nullable AttributionDialogManager attributionDialogManager) {
     this.attributionDialogManager.setValue(attributionDialogManager);
   }
@@ -561,7 +565,10 @@ public final class UiSettings extends ViewModel {
    * Get the custom attribution dialog manager.
    *
    * @return the active manager class used for showing attribution
+   * @deprecated This method might lead to the memory leaks.
+   * Use {@link MapView#setAttributionDialogManager(AttributionDialogManager)} instead.
    */
+  @Deprecated
   public AttributionDialogManager getAttributionDialogManager() {
     return attributionDialogManager.getValue();
   }
@@ -1051,5 +1058,13 @@ public final class UiSettings extends ViewModel {
     setCompassMargins(getCompassMarginLeft(), getCompassMarginTop(), getCompassMarginRight(), getCompassMarginBottom());
     setAttributionMargins(getAttributionMarginLeft(), getAttributionMarginTop(), getAttributionMarginRight(),
       getAttributionMarginBottom());
+  }
+
+  /**
+   * Method used to cleanup resources that might leak during configuration change,
+   * like deprecated {@link #setAttributionDialogManager(AttributionDialogManager)}.
+   */
+  void onMapDestroy() {
+    setAttributionDialogManager(null);
   }
 }
