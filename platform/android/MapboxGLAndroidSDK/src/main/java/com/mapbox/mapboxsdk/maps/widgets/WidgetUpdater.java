@@ -34,6 +34,7 @@ public final class WidgetUpdater {
     uiSettings = ViewModelProviders.of((FragmentActivity) context).get(UiSettings.class);
     initialiseCompassObservableSettings(context);
     initialiseAttributionObservableSettings(context);
+    initialiseLogoObservableSettings(context);
   }
 
   private void initialiseCompassObservableSettings(Context context) {
@@ -86,5 +87,21 @@ public final class WidgetUpdater {
     // margins
     uiSettings.getAttributionMarginsObservable().observe(lifecycleOwner, margins ->
       ViewUtils.setViewMargins(attributionView, margins[0], margins[1], margins[2], margins[3]));
+  }
+
+  private void initialiseLogoObservableSettings(Context context) {
+    LifecycleOwner lifecycleOwner = (LifecycleOwner) context;
+
+    // gravity
+    uiSettings.getLogoGravityObservable().observe(lifecycleOwner,
+      gravity -> ViewUtils.setViewGravity(logoView, gravity));
+
+    // enabled
+    uiSettings.isLogoEnabledObservable().observe(lifecycleOwner,
+      enabled -> logoView.setVisibility(enabled ? View.VISIBLE : View.GONE));
+
+    // margins
+    uiSettings.getLogoMarginsObservable().observe(lifecycleOwner, margins ->
+      ViewUtils.setViewMargins(logoView, margins[0], margins[1], margins[2], margins[3]));
   }
 }

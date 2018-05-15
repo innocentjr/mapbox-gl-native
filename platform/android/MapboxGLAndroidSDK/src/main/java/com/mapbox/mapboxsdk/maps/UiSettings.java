@@ -13,26 +13,20 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
 import android.support.v4.content.res.ResourcesCompat;
-import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
 
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.utils.ColorUtils;
-import com.mapbox.mapboxsdk.utils.ViewUtils;
 
 /**
  * Settings for the user interface of a MapboxMap. To obtain this interface, call getUiSettings().
  */
 public final class UiSettings extends ViewModel {
+  // TODO: 15.05.18 cleanup unused constants
   // TODO: 15.05.18 change post values to set values
   private Projection projection; // TODO: 14.05.18 clear projection during maps destroy?
 
-  private View logoView;
-  private float pixelRatio;
-  private final int[] logoMargins = new int[4];
   private AttributionDialogManager attributionDialogManager;
 
   // compass settings
@@ -48,6 +42,11 @@ public final class UiSettings extends ViewModel {
   private final MutableLiveData<Boolean> attributionEnabled = new MutableLiveData<>();
   private final MutableLiveData<Integer> attributionTintColor = new MutableLiveData<>();
   private final MutableLiveData<Integer[]> attributionMargins = new MutableLiveData<>();
+
+  // logo view
+  private final MutableLiveData<Integer> logoGravity = new MutableLiveData<>();
+  private final MutableLiveData<Boolean> logoEnabled = new MutableLiveData<>();
+  private final MutableLiveData<Integer[]> logoMargins = new MutableLiveData<>();
 
 
   private boolean rotateGesturesEnabled = true;
@@ -73,13 +72,8 @@ public final class UiSettings extends ViewModel {
 
   private final MutableLiveData<PointF> userProvidedFocalPoint = new MutableLiveData<>();
 
-  void initialiseViews(@NonNull Projection projection, @NonNull View logoView) {
+  void initialiseViews(@NonNull Projection projection) {
     this.projection = projection;
-
-    this.logoView = logoView;
-    if (logoView.getResources() != null) {
-      this.pixelRatio = logoView.getResources().getDisplayMetrics().density;
-    }
   }
 
   void initialiseOptions(@NonNull Context context, @NonNull MapboxMapOptions options) {
@@ -93,7 +87,6 @@ public final class UiSettings extends ViewModel {
 
   void onSaveInstanceState(Bundle outState) {
     saveGestures(outState);
-    saveLogo(outState);
     saveZoomControl(outState);
     saveDeselectMarkersOnTap(outState);
     saveFocalPoint(outState);
@@ -101,7 +94,6 @@ public final class UiSettings extends ViewModel {
 
   void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
     restoreGestures(savedInstanceState);
-    restoreLogo(savedInstanceState);
     restoreZoomControl(savedInstanceState);
     restoreDeselectMarkersOnTap(savedInstanceState);
     restoreFocalPoint(savedInstanceState);
@@ -175,24 +167,6 @@ public final class UiSettings extends ViewModel {
       int fourDp = (int) resources.getDimension(R.dimen.mapbox_four_dp);
       setLogoMargins(fourDp, fourDp, fourDp, fourDp);
     }
-  }
-
-  private void saveLogo(Bundle outState) {
-    outState.putInt(MapboxConstants.STATE_LOGO_GRAVITY, getLogoGravity());
-    outState.putInt(MapboxConstants.STATE_LOGO_MARGIN_LEFT, getLogoMarginLeft());
-    outState.putInt(MapboxConstants.STATE_LOGO_MARGIN_TOP, getLogoMarginTop());
-    outState.putInt(MapboxConstants.STATE_LOGO_MARGIN_RIGHT, getLogoMarginRight());
-    outState.putInt(MapboxConstants.STATE_LOGO_MARGIN_BOTTOM, getLogoMarginBottom());
-    outState.putBoolean(MapboxConstants.STATE_LOGO_ENABLED, isLogoEnabled());
-  }
-
-  private void restoreLogo(Bundle savedInstanceState) {
-    setLogoEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_LOGO_ENABLED));
-    setLogoGravity(savedInstanceState.getInt(MapboxConstants.STATE_LOGO_GRAVITY));
-    setLogoMargins(savedInstanceState.getInt(MapboxConstants.STATE_LOGO_MARGIN_LEFT),
-      savedInstanceState.getInt(MapboxConstants.STATE_LOGO_MARGIN_TOP),
-      savedInstanceState.getInt(MapboxConstants.STATE_LOGO_MARGIN_RIGHT),
-      savedInstanceState.getInt(MapboxConstants.STATE_LOGO_MARGIN_BOTTOM));
   }
 
   private void initialiseAttribution(Context context, MapboxMapOptions options) {
@@ -433,7 +407,7 @@ public final class UiSettings extends ViewModel {
    * @param enabled True to enable the logo; false to disable the logo.
    */
   public void setLogoEnabled(boolean enabled) {
-    logoView.setVisibility(enabled ? View.VISIBLE : View.GONE);
+    logoEnabled.postValue(enabled);
   }
 
   /**
@@ -442,7 +416,16 @@ public final class UiSettings extends ViewModel {
    * @return True if the logo is enabled; false if the logo is disabled.
    */
   public boolean isLogoEnabled() {
-    return logoView.getVisibility() == View.VISIBLE;
+    return logoEnabled.getValue();
+  }
+
+  /**
+   * Returns whether the logo is enabled observable.
+   *
+   * @return Logo is enabled observable.
+   */
+  public MutableLiveData<Boolean> isLogoEnabledObservable() {
+    return logoEnabled;
   }
 
   /**
@@ -455,7 +438,7 @@ public final class UiSettings extends ViewModel {
    * @param gravity Android SDK Gravity.
    */
   public void setLogoGravity(int gravity) {
-    ViewUtils.setViewGravity(logoView, gravity);
+    logoGravity.postValue(gravity);
   }
 
   /**
@@ -464,7 +447,16 @@ public final class UiSettings extends ViewModel {
    * @return The gravity
    */
   public int getLogoGravity() {
-    return ((FrameLayout.LayoutParams) logoView.getLayoutParams()).gravity;
+    return logoGravity.getValue();
+  }
+
+  /**
+   * Returns the observable gravity value of the logo
+   *
+   * @return The observable gravity
+   */
+  public MutableLiveData<Integer> getLogoGravityObservable() {
+    return logoGravity;
   }
 
   /**
@@ -477,7 +469,7 @@ public final class UiSettings extends ViewModel {
    * @param bottom The bottom margin in pixels.
    */
   public void setLogoMargins(int left, int top, int right, int bottom) {
-//    ViewUtils.setViewMargins(logoView, logoMargins, left, top, right, bottom); // TODO: 14.05.18 logo margin
+    logoMargins.postValue(new Integer[] {left, top, right, bottom});
   }
 
   /**
@@ -486,7 +478,7 @@ public final class UiSettings extends ViewModel {
    * @return The left margin in pixels
    */
   public int getLogoMarginLeft() {
-    return logoMargins[0];
+    return logoMargins.getValue()[0];
   }
 
   /**
@@ -495,7 +487,7 @@ public final class UiSettings extends ViewModel {
    * @return The top margin in pixels
    */
   public int getLogoMarginTop() {
-    return logoMargins[1];
+    return logoMargins.getValue()[1];
   }
 
   /**
@@ -504,7 +496,7 @@ public final class UiSettings extends ViewModel {
    * @return The right margin in pixels
    */
   public int getLogoMarginRight() {
-    return logoMargins[2];
+    return logoMargins.getValue()[2];
   }
 
   /**
@@ -513,7 +505,16 @@ public final class UiSettings extends ViewModel {
    * @return The bottom margin in pixels
    */
   public int getLogoMarginBottom() {
-    return logoMargins[3];
+    return logoMargins.getValue()[3];
+  }
+
+  /**
+   * Returns Logo view margins observable.
+   *
+   * @return Logo view margins observable.
+   */
+  public MutableLiveData<Integer[]> getLogoMarginsObservable() {
+    return logoMargins;
   }
 
   /**
@@ -1033,10 +1034,6 @@ public final class UiSettings extends ViewModel {
    */
   public float getWidth() {
     return projection.getWidth();
-  }
-
-  float getPixelRatio() {
-    return pixelRatio;
   }
 
   /**

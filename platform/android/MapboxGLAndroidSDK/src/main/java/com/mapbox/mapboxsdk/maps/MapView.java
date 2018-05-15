@@ -159,7 +159,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     Projection proj = new Projection(nativeMapView);
 
     UiSettings uiSettings = ViewModelProviders.of((FragmentActivity) context).get(UiSettings.class);
-    uiSettings.initialiseViews(proj, logoView);
+    uiSettings.initialiseViews(proj);
     uiSettings.getFocalPointObservable().observe((LifecycleOwner) context, point -> this.focalPoint = point);
 
     LongSparseArray<Annotation> annotationsArray = new LongSparseArray<>();
