@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
-import android.os.Bundle;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -16,7 +15,6 @@ import android.support.v4.content.res.ResourcesCompat;
 
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
-import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.utils.ColorUtils;
 
 /**
@@ -24,7 +22,6 @@ import com.mapbox.mapboxsdk.utils.ColorUtils;
  */
 @UiThread
 public final class UiSettings extends ViewModel {
-  // TODO: 15.05.18 cleanup unused constants
   private Projection projection;
 
   // compass settings
@@ -47,17 +44,14 @@ public final class UiSettings extends ViewModel {
   private final MutableLiveData<Boolean> logoEnabled = new MutableLiveData<>();
   private final MutableLiveData<Integer[]> logoMargins = new MutableLiveData<>();
 
+  // gestures
   private boolean rotateGesturesEnabled = true;
-
   private boolean tiltGesturesEnabled = true;
-
   private boolean zoomGesturesEnabled = true;
-
   private boolean scrollGesturesEnabled = true;
+  private boolean doubleTapGesturesEnabled = true;
 
   private boolean zoomControlsEnabled;
-
-  private boolean doubleTapGesturesEnabled = true;
 
   private boolean scaleVelocityAnimationEnabled = true;
   private boolean rotateVelocityAnimationEnabled = true;
@@ -83,20 +77,6 @@ public final class UiSettings extends ViewModel {
     initialiseZoomControl(context);
   }
 
-  void onSaveInstanceState(Bundle outState) {
-    saveGestures(outState);
-    saveZoomControl(outState);
-    saveDeselectMarkersOnTap(outState);
-    saveFocalPoint(outState);
-  }
-
-  void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
-    restoreGestures(savedInstanceState);
-    restoreZoomControl(savedInstanceState);
-    restoreDeselectMarkersOnTap(savedInstanceState);
-    restoreFocalPoint(savedInstanceState);
-  }
-
   private void initialiseGestures(MapboxMapOptions options) {
     setZoomGesturesEnabled(options.getZoomGesturesEnabled());
     setScrollGesturesEnabled(options.getScrollGesturesEnabled());
@@ -104,34 +84,6 @@ public final class UiSettings extends ViewModel {
     setTiltGesturesEnabled(options.getTiltGesturesEnabled());
     setZoomControlsEnabled(options.getZoomControlsEnabled());
     setDoubleTapGesturesEnabled(options.getDoubleTapGesturesEnabled());
-  }
-
-  private void saveGestures(Bundle outState) {
-    outState.putBoolean(MapboxConstants.STATE_ZOOM_ENABLED, isZoomGesturesEnabled());
-    outState.putBoolean(MapboxConstants.STATE_SCROLL_ENABLED, isScrollGesturesEnabled());
-    outState.putBoolean(MapboxConstants.STATE_ROTATE_ENABLED, isRotateGesturesEnabled());
-    outState.putBoolean(MapboxConstants.STATE_TILT_ENABLED, isTiltGesturesEnabled());
-    outState.putBoolean(MapboxConstants.STATE_DOUBLE_TAP_ENABLED, isDoubleTapGesturesEnabled());
-    outState.putBoolean(MapboxConstants.STATE_SCALE_ANIMATION_ENABLED, isScaleVelocityAnimationEnabled());
-    outState.putBoolean(MapboxConstants.STATE_ROTATE_ANIMATION_ENABLED, isRotateVelocityAnimationEnabled());
-    outState.putBoolean(MapboxConstants.STATE_FLING_ANIMATION_ENABLED, isFlingVelocityAnimationEnabled());
-    outState.putBoolean(MapboxConstants.STATE_INCREASE_ROTATE_THRESHOLD, isIncreaseRotateThresholdWhenScaling());
-    outState.putBoolean(MapboxConstants.STATE_INCREASE_SCALE_THRESHOLD, isIncreaseScaleThresholdWhenRotating());
-  }
-
-  private void restoreGestures(Bundle savedInstanceState) {
-    setZoomGesturesEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_ZOOM_ENABLED));
-    setScrollGesturesEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_SCROLL_ENABLED));
-    setRotateGesturesEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_ROTATE_ENABLED));
-    setTiltGesturesEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_TILT_ENABLED));
-    setDoubleTapGesturesEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_DOUBLE_TAP_ENABLED));
-    setScaleVelocityAnimationEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_SCALE_ANIMATION_ENABLED));
-    setRotateVelocityAnimationEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_ROTATE_ANIMATION_ENABLED));
-    setFlingVelocityAnimationEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_FLING_ANIMATION_ENABLED));
-    setIncreaseRotateThresholdWhenScaling(
-      savedInstanceState.getBoolean(MapboxConstants.STATE_INCREASE_ROTATE_THRESHOLD));
-    setIncreaseScaleThresholdWhenRotating(
-      savedInstanceState.getBoolean(MapboxConstants.STATE_INCREASE_SCALE_THRESHOLD));
   }
 
   private void initialiseCompass(MapboxMapOptions options, Resources resources) {
@@ -193,14 +145,6 @@ public final class UiSettings extends ViewModel {
     if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN_MULTITOUCH)) {
       setZoomControlsEnabled(true);
     }
-  }
-
-  private void saveZoomControl(Bundle outState) {
-    outState.putBoolean(MapboxConstants.STATE_ZOOM_CONTROLS_ENABLED, isZoomControlsEnabled());
-  }
-
-  private void restoreZoomControl(Bundle savedInstanceState) {
-    setZoomControlsEnabled(savedInstanceState.getBoolean(MapboxConstants.STATE_ZOOM_CONTROLS_ENABLED));
   }
 
   /**
@@ -816,14 +760,6 @@ public final class UiSettings extends ViewModel {
     return doubleTapGesturesEnabled;
   }
 
-  private void restoreDeselectMarkersOnTap(Bundle savedInstanceState) {
-    setDeselectMarkersOnTap(savedInstanceState.getBoolean(MapboxConstants.STATE_DESELECT_MARKER_ON_TAP));
-  }
-
-  private void saveDeselectMarkersOnTap(Bundle outState) {
-    outState.putBoolean(MapboxConstants.STATE_DESELECT_MARKER_ON_TAP, isDeselectMarkersOnTap());
-  }
-
   /**
    * Gets whether the markers are automatically deselected (and therefore, their infowindows
    * closed) when a map tap is detected.
@@ -992,17 +928,6 @@ public final class UiSettings extends ViewModel {
     setTiltGesturesEnabled(enabled);
     setZoomGesturesEnabled(enabled);
     setDoubleTapGesturesEnabled(enabled);
-  }
-
-  private void saveFocalPoint(Bundle outState) {
-    outState.putParcelable(MapboxConstants.STATE_USER_FOCAL_POINT, getFocalPoint());
-  }
-
-  private void restoreFocalPoint(Bundle savedInstanceState) {
-    PointF pointF = savedInstanceState.getParcelable(MapboxConstants.STATE_USER_FOCAL_POINT);
-    if (pointF != null) {
-      setFocalPoint(pointF);
-    }
   }
 
   /**
