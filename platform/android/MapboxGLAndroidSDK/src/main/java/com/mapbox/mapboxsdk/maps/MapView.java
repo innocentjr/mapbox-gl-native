@@ -1140,21 +1140,27 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   private static class AttributionClickListener implements OnClickListener {
 
     private final AttributionDialogManager defaultDialogManager;
-    private UiSettings uiSettings;
+    private AttributionDialogManager currentDialogManager;
 
     private AttributionClickListener(Context context, MapboxMap mapboxMap) {
       this.defaultDialogManager = new AttributionDialogManager(context, mapboxMap);
-      this.uiSettings = mapboxMap.getUiSettings();
+      currentDialogManager = defaultDialogManager;
+
+      UiSettings uiSettings = ViewModelProviders.of((FragmentActivity) context).get(UiSettings.class);
+      uiSettings.getAttributionDialogManagerObservable().observe((LifecycleOwner) context, manager -> {
+        if (manager != currentDialogManager) {
+          if (manager == null) {
+            uiSettings.setAttributionDialogManager(defaultDialogManager);
+          } else {
+            currentDialogManager = manager;
+          }
+        }
+      });
     }
 
     @Override
     public void onClick(View v) {
-      AttributionDialogManager customDialogManager = uiSettings.getAttributionDialogManager();
-      if (customDialogManager != null) {
-        uiSettings.getAttributionDialogManager().onClick(v);
-      } else {
-        defaultDialogManager.onClick(v);
-      }
+      currentDialogManager.onClick(v);
     }
   }
 }

@@ -27,7 +27,6 @@ public final class UiSettings extends ViewModel {
   // TODO: 15.05.18 change post values to set values
   private Projection projection; // TODO: 14.05.18 clear projection during maps destroy?
 
-  private AttributionDialogManager attributionDialogManager;
 
   // compass settings
   private final MutableLiveData<Integer> compassGravity = new MutableLiveData<>();
@@ -42,6 +41,7 @@ public final class UiSettings extends ViewModel {
   private final MutableLiveData<Boolean> attributionEnabled = new MutableLiveData<>();
   private final MutableLiveData<Integer> attributionTintColor = new MutableLiveData<>();
   private final MutableLiveData<Integer[]> attributionMargins = new MutableLiveData<>();
+  private final MutableLiveData<AttributionDialogManager> attributionDialogManager = new MutableLiveData<>();
 
   // logo view
   private final MutableLiveData<Integer> logoGravity = new MutableLiveData<>();
@@ -555,8 +555,8 @@ public final class UiSettings extends ViewModel {
    *
    * @param attributionDialogManager the manager class used for showing attribution
    */
-  public void setAttributionDialogManager(AttributionDialogManager attributionDialogManager) {
-    this.attributionDialogManager = attributionDialogManager;
+  public void setAttributionDialogManager(@Nullable AttributionDialogManager attributionDialogManager) {
+    this.attributionDialogManager.postValue(attributionDialogManager);
   }
 
   /**
@@ -565,6 +565,15 @@ public final class UiSettings extends ViewModel {
    * @return the active manager class used for showing attribution
    */
   public AttributionDialogManager getAttributionDialogManager() {
+    return attributionDialogManager.getValue();
+  }
+
+  /**
+   * Get the custom attribution dialog manager observable.
+   *
+   * @return Custom attribution dialog manager observable.
+   */
+  public MutableLiveData<AttributionDialogManager> getAttributionDialogManagerObservable() {
     return attributionDialogManager;
   }
 
