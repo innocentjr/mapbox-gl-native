@@ -22,11 +22,10 @@ import com.mapbox.mapboxsdk.utils.ColorUtils;
 /**
  * Settings for the user interface of a MapboxMap. To obtain this interface, call getUiSettings().
  */
+@UiThread
 public final class UiSettings extends ViewModel {
   // TODO: 15.05.18 cleanup unused constants
-  // TODO: 15.05.18 change post values to set values
   private Projection projection; // TODO: 14.05.18 clear projection during maps destroy?
-
 
   // compass settings
   private final MutableLiveData<Integer> compassGravity = new MutableLiveData<>();
@@ -47,7 +46,6 @@ public final class UiSettings extends ViewModel {
   private final MutableLiveData<Integer> logoGravity = new MutableLiveData<>();
   private final MutableLiveData<Boolean> logoEnabled = new MutableLiveData<>();
   private final MutableLiveData<Integer[]> logoMargins = new MutableLiveData<>();
-
 
   private boolean rotateGesturesEnabled = true;
 
@@ -217,7 +215,7 @@ public final class UiSettings extends ViewModel {
    * @param compassEnabled True to enable the compass; false to disable the compass.
    */
   public void setCompassEnabled(boolean enabled) {
-    compassEnabled.postValue(enabled);
+    compassEnabled.setValue(enabled);
   }
 
   /**
@@ -249,7 +247,7 @@ public final class UiSettings extends ViewModel {
    */
   @UiThread
   public void setCompassGravity(int gravity) {
-    compassGravity.postValue(gravity);
+    compassGravity.setValue(gravity);
   }
 
   /**
@@ -261,7 +259,7 @@ public final class UiSettings extends ViewModel {
    * @param compassFadeFacingNorth True to enable the fading animation; false to disable it
    */
   public void setCompassFadeFacingNorth(boolean fadeFacingNorth) {
-    compassFadeFacingNorth.postValue(fadeFacingNorth);
+    compassFadeFacingNorth.setValue(fadeFacingNorth);
   }
 
   /**
@@ -273,7 +271,7 @@ public final class UiSettings extends ViewModel {
    * @param compass the drawable to show as image compass
    */
   public void setCompassImage(Drawable compass) {
-    compassImage.postValue(compass);
+    compassImage.setValue(compass);
   }
 
   /**
@@ -323,7 +321,7 @@ public final class UiSettings extends ViewModel {
    */
   @UiThread
   public void setCompassMargins(int left, int top, int right, int bottom) {
-    compassMargins.postValue(new Integer[] {left, top, right, bottom});
+    compassMargins.setValue(new Integer[] {left, top, right, bottom});
   }
 
   /**
@@ -391,7 +389,7 @@ public final class UiSettings extends ViewModel {
 
   void updateCompass(@NonNull CameraPosition cameraPosition) {
     double clockwiseBearing = -cameraPosition.bearing;
-    compassRotation.postValue(clockwiseBearing);
+    compassRotation.setValue(clockwiseBearing);
   }
 
   public MutableLiveData<Double> getCompassRotationObservable() {
@@ -407,7 +405,7 @@ public final class UiSettings extends ViewModel {
    * @param enabled True to enable the logo; false to disable the logo.
    */
   public void setLogoEnabled(boolean enabled) {
-    logoEnabled.postValue(enabled);
+    logoEnabled.setValue(enabled);
   }
 
   /**
@@ -438,7 +436,7 @@ public final class UiSettings extends ViewModel {
    * @param gravity Android SDK Gravity.
    */
   public void setLogoGravity(int gravity) {
-    logoGravity.postValue(gravity);
+    logoGravity.setValue(gravity);
   }
 
   /**
@@ -469,7 +467,7 @@ public final class UiSettings extends ViewModel {
    * @param bottom The bottom margin in pixels.
    */
   public void setLogoMargins(int left, int top, int right, int bottom) {
-    logoMargins.postValue(new Integer[] {left, top, right, bottom});
+    logoMargins.setValue(new Integer[] {left, top, right, bottom});
   }
 
   /**
@@ -526,7 +524,7 @@ public final class UiSettings extends ViewModel {
    * @param enabled True to enable the attribution; false to disable the attribution.
    */
   public void setAttributionEnabled(boolean enabled) {
-    attributionEnabled.postValue(enabled);
+    attributionEnabled.setValue(enabled);
   }
 
   /**
@@ -556,7 +554,7 @@ public final class UiSettings extends ViewModel {
    * @param attributionDialogManager the manager class used for showing attribution
    */
   public void setAttributionDialogManager(@Nullable AttributionDialogManager attributionDialogManager) {
-    this.attributionDialogManager.postValue(attributionDialogManager);
+    this.attributionDialogManager.setValue(attributionDialogManager);
   }
 
   /**
@@ -586,7 +584,7 @@ public final class UiSettings extends ViewModel {
    * @param gravity Android SDK Gravity.
    */
   public void setAttributionGravity(int gravity) {
-    attributionGravity.postValue(gravity);
+    attributionGravity.setValue(gravity);
   }
 
   /**
@@ -616,7 +614,7 @@ public final class UiSettings extends ViewModel {
    * @param bottom The bottom margin in pixels.
    */
   public void setAttributionMargins(int left, int top, int right, int bottom) {
-    attributionMargins.postValue(new Integer[] {left, top, right, bottom});
+    attributionMargins.setValue(new Integer[] {left, top, right, bottom});
   }
 
   /**
@@ -628,7 +626,7 @@ public final class UiSettings extends ViewModel {
    * @param tintColor Color to tint the attribution.
    */
   public void setAttributionTintColor(@ColorInt int tintColor) {
-    attributionTintColor.postValue(tintColor);
+    attributionTintColor.setValue(tintColor);
   }
 
   /**
@@ -1006,7 +1004,7 @@ public final class UiSettings extends ViewModel {
    * @param focalPoint the focal point to be used.
    */
   public void setFocalPoint(@Nullable PointF focalPoint) {
-    userProvidedFocalPoint.postValue(focalPoint);
+    userProvidedFocalPoint.setValue(focalPoint);
   }
 
   /**

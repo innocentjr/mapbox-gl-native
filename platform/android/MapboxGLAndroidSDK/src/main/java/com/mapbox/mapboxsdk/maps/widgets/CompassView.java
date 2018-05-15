@@ -119,7 +119,7 @@ public final class CompassView extends ImageView implements Runnable {
   @Deprecated
   public void update(final double bearing) {
     if (uiSettings.getCompassRotationObservable().getValue() != bearing) {
-      uiSettings.getCompassRotationObservable().postValue(bearing);
+      uiSettings.getCompassRotationObservable().setValue(bearing);
     }
   }
 
