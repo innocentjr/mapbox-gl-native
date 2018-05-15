@@ -40,7 +40,7 @@ public class UiSettingsTest {
   @Before
   public void beforeTest() {
     uiSettings = new UiSettings();
-    uiSettings.initialiseViews(projection, compassView, imageView, logoView);
+    uiSettings.initialiseProjection(projection, compassView, imageView, logoView);
   }
 
   @Test

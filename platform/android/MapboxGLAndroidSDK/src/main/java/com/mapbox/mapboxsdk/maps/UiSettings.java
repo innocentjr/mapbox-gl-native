@@ -25,7 +25,7 @@ import com.mapbox.mapboxsdk.utils.ColorUtils;
 @UiThread
 public final class UiSettings extends ViewModel {
   // TODO: 15.05.18 cleanup unused constants
-  private Projection projection; // TODO: 14.05.18 clear projection during maps destroy?
+  private Projection projection;
 
   // compass settings
   private final MutableLiveData<Integer> compassGravity = new MutableLiveData<>();
@@ -70,7 +70,7 @@ public final class UiSettings extends ViewModel {
 
   private final MutableLiveData<PointF> userProvidedFocalPoint = new MutableLiveData<>();
 
-  void initialiseViews(@NonNull Projection projection) {
+  void initialiseProjection(@NonNull Projection projection) {
     this.projection = projection;
   }
 
@@ -1036,7 +1036,9 @@ public final class UiSettings extends ViewModel {
    * Returns the measured height of the MapView
    *
    * @return height in pixels
+   * @deprecated Use {@link MapView#getHeight()} instead.
    */
+  @Deprecated
   public float getHeight() {
     return projection.getHeight();
   }
@@ -1045,7 +1047,9 @@ public final class UiSettings extends ViewModel {
    * Returns the measured width of the MapView
    *
    * @return widht in pixels
+   * @deprecated Use {@link MapView#getWidth()} instead.
    */
+  @Deprecated
   public float getWidth() {
     return projection.getWidth();
   }
@@ -1062,9 +1066,10 @@ public final class UiSettings extends ViewModel {
 
   /**
    * Method used to cleanup resources that might leak during configuration change,
-   * like deprecated {@link #setAttributionDialogManager(AttributionDialogManager)}.
+   * like deprecated {@link #setAttributionDialogManager(AttributionDialogManager)} or {@link #getWidth()}.
    */
   void onMapDestroy() {
     setAttributionDialogManager(null);
+    projection = null;
   }
 }
