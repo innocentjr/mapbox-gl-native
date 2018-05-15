@@ -42,6 +42,7 @@ import com.mapbox.mapboxsdk.maps.renderer.MapRenderer;
 import com.mapbox.mapboxsdk.maps.renderer.glsurfaceview.GLSurfaceViewMapRenderer;
 import com.mapbox.mapboxsdk.maps.renderer.textureview.TextureViewMapRenderer;
 import com.mapbox.mapboxsdk.maps.widgets.CompassView;
+import com.mapbox.mapboxsdk.maps.widgets.WidgetUpdater;
 import com.mapbox.mapboxsdk.net.ConnectivityReceiver;
 import com.mapbox.mapboxsdk.storage.FileSource;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
@@ -90,6 +91,7 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
   private PointF focalPoint;
   private ImageView attrView;
   private ImageView logoView;
+  private WidgetUpdater widgetUpdater;
 
   private MapGestureDetector mapGestureDetector;
   private MapKeyListener mapKeyListener;
@@ -132,6 +134,9 @@ public class MapView extends FrameLayout implements NativeMapView.ViewCallback {
     compassView = (CompassView) view.findViewById(R.id.compassView);
     attrView = (ImageView) view.findViewById(R.id.attributionView);
     logoView = (ImageView) view.findViewById(R.id.logoView);
+
+    // create widget updater
+    widgetUpdater = new WidgetUpdater(context, compassView, attrView, logoView);
 
     // add accessibility support
     setContentDescription(context.getString(R.string.mapbox_mapActionDescription));
