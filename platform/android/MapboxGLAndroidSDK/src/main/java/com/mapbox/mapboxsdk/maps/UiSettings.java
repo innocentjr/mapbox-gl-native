@@ -77,7 +77,7 @@ public final class UiSettings extends ViewModel {
     initialiseZoomControl(context);
   }
 
-  private void initialiseGestures(MapboxMapOptions options) {
+  void initialiseGestures(MapboxMapOptions options) {
     setZoomGesturesEnabled(options.getZoomGesturesEnabled());
     setScrollGesturesEnabled(options.getScrollGesturesEnabled());
     setRotateGesturesEnabled(options.getRotateGesturesEnabled());
@@ -86,15 +86,15 @@ public final class UiSettings extends ViewModel {
     setDoubleTapGesturesEnabled(options.getDoubleTapGesturesEnabled());
   }
 
-  private void initialiseCompass(MapboxMapOptions options, Resources resources) {
+  void initialiseCompass(MapboxMapOptions options, Resources resources) {
     setCompassEnabled(options.getCompassEnabled());
     setCompassGravity(options.getCompassGravity());
     int[] compassMargins = options.getCompassMargins();
     if (compassMargins != null) {
       setCompassMargins(compassMargins[0], compassMargins[1], compassMargins[2], compassMargins[3]);
     } else {
-      int tenDp = (int) resources.getDimension(R.dimen.mapbox_four_dp);
-      setCompassMargins(tenDp, tenDp, tenDp, tenDp);
+      int fourDP = (int) resources.getDimension(R.dimen.mapbox_four_dp);
+      setCompassMargins(fourDP, fourDP, fourDP, fourDP);
     }
     setCompassFadeFacingNorth(options.getCompassFadeFacingNorth());
     if (options.getCompassImage() == null) {
@@ -103,7 +103,7 @@ public final class UiSettings extends ViewModel {
     setCompassImage(options.getCompassImage());
   }
 
-  private void initialiseLogo(MapboxMapOptions options, Resources resources) {
+  void initialiseLogo(MapboxMapOptions options, Resources resources) {
     setLogoEnabled(options.getLogoEnabled());
     setLogoGravity(options.getLogoGravity());
     setLogoMargins(resources, options.getLogoMargins());
@@ -119,7 +119,7 @@ public final class UiSettings extends ViewModel {
     }
   }
 
-  private void initialiseAttribution(Context context, MapboxMapOptions options) {
+  void initialiseAttribution(Context context, MapboxMapOptions options) {
     setAttributionEnabled(options.getAttributionEnabled());
     setAttributionGravity(options.getAttributionGravity());
     setAttributionMargins(context, options.getAttributionMargins());
@@ -141,7 +141,7 @@ public final class UiSettings extends ViewModel {
     }
   }
 
-  private void initialiseZoomControl(Context context) {
+  void initialiseZoomControl(Context context) {
     if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN_MULTITOUCH)) {
       setZoomControlsEnabled(true);
     }
